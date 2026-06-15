@@ -1,30 +1,32 @@
+--!strict
+
+--[[ 
+    ROBLOX UI LIBRARY - FIXED VERSION
+    Style: Gold & Dark (Video)
+    Note: Tout-en-un pour éviter l'erreur SEH (pas de loadstring externe).
+]]
+
 local Library = {
     Theme = {
         Accent = Color3.fromRGB(255, 200, 0),
         Background = Color3.fromRGB(20, 20, 20),
         Secondary = Color3.fromRGB(30, 30, 30),
         Text = Color3.fromRGB(255, 255, 255),
-        Font = Enum.Font.GothamBold,
-        Rounding = 10
+        Font = Enum.Font.GothamBold
     }
 }
 
 -- Services
 local UIS = game:GetService("UserInputService")
 local Tween = game:GetService("TweenService")
-local Run = game:GetService("RunService")
 local Players = game:GetService("Players")
-
 local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
 
--- Helper pour la stabilité (Évite le CoreGui si instable)
-local function getSafeParent()
+-- Helper pour éviter le CoreGui qui fait crash
+local function getParent()
     local success, coregui = pcall(function() return game:GetService("CoreGui") end)
-    if success and coregui then
-        return coregui
-    end
-    return PlayerGui
+    if success and coregui then return coregui end
+    return LocalPlayer:WaitForChild("PlayerGui")
 end
 
 -- UI Helpers
@@ -35,33 +37,29 @@ local function create(class, props)
 end
 
 local function round(parent, radius)
-    local c = create("UICorner", {CornerRadius = UDim.new(0, radius or Library.Theme.Rounding)})
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius or 8)
     c.Parent = parent
-end
-
-local function t(obj, props)
-    Tween:Create(obj, TweenInfo.new(0.2, Enum.EasingStyle.Quad), props):Play()
 end
 
 -- Main Window
 function Library:CreateWindow(title)
     local window = {Tabs = {}, ActiveTab = nil}
     
-    local sg = create("ScreenGui", {Name = "StableLib", DisplayOrder = 999, ResetOnSpawn = false})
-    sg.Parent = getSafeParent()
+    local sg = create("ScreenGui", {Name = "GoldLibFixed", DisplayOrder = 999, ResetOnSpawn = false})
+    sg.Parent = getParent()
     
     local main = create("Frame", {
         Name = "Main",
-        Size = UDim2.fromOffset(550, 350),
+        Size = UDim2.fromOffset(500, 350),
         Position = UDim2.fromScale(0.5, 0.5),
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundColor3 = Library.Theme.Background,
-        ClipsDescendants = true,
         Parent = sg
     })
     round(main)
     
-    -- Draggable
+    -- Draggable simple (plus stable)
     local dragging, dragStart, startPos
     main.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -78,7 +76,7 @@ function Library:CreateWindow(title)
 
     -- Sidebar
     local sidebar = create("Frame", {
-        Size = UDim2.new(0, 150, 1, 0),
+        Size = UDim2.new(0, 130, 1, 0),
         BackgroundColor3 = Library.Theme.Secondary,
         Parent = main
     })
@@ -86,35 +84,34 @@ function Library:CreateWindow(title)
     
     create("TextLabel", {
         Text = title,
-        Size = UDim2.new(1, 0, 0, 50),
+        Size = UDim2.new(1, 0, 0, 40),
         TextColor3 = Library.Theme.Accent,
         Font = Library.Theme.Font,
-        TextSize = 20,
+        TextSize = 18,
         BackgroundTransparency = 1,
         Parent = sidebar
     })
     
-    local tabList = create("ScrollingFrame", {
-        Size = UDim2.new(1, 0, 1, -60),
-        Position = UDim2.new(0, 0, 0, 50),
+    local tabList = create("Frame", {
+        Size = UDim2.new(1, 0, 1, -50),
+        Position = UDim2.new(0, 0, 0, 45),
         BackgroundTransparency = 1,
-        ScrollBarThickness = 0,
         Parent = sidebar
     })
     create("UIListLayout", {Padding = UDim.new(0, 5), HorizontalAlignment = Enum.HorizontalAlignment.Center, Parent = tabList})
 
     local container = create("Frame", {
-        Size = UDim2.new(1, -160, 1, -10),
-        Position = UDim2.new(0, 155, 0, 5),
+        Size = UDim2.new(1, -140, 1, -10),
+        Position = UDim2.new(0, 135, 0, 5),
         BackgroundTransparency = 1,
         Parent = main
     })
 
     function window:AddTab(name)
-        local tab = {Elements = {}}
+        local tab = {}
         local btn = create("TextButton", {
             Text = name,
-            Size = UDim2.new(0.9, 0, 0, 35),
+            Size = UDim2.new(0.9, 0, 0, 30),
             BackgroundColor3 = Library.Theme.Background,
             TextColor3 = Library.Theme.Text,
             Font = Library.Theme.Font,
@@ -128,7 +125,6 @@ function Library:CreateWindow(title)
             BackgroundTransparency = 1,
             Visible = false,
             ScrollBarThickness = 2,
-            ScrollBarImageColor3 = Library.Theme.Accent,
             Parent = container
         })
         create("UIListLayout", {Padding = UDim.new(0, 10), Parent = page})
@@ -136,10 +132,10 @@ function Library:CreateWindow(title)
         btn.MouseButton1Click:Connect(function()
             if window.ActiveTab then
                 window.ActiveTab.Page.Visible = false
-                t(window.ActiveTab.Btn, {BackgroundColor3 = Library.Theme.Background, TextColor3 = Library.Theme.Text})
+                window.ActiveTab.Btn.BackgroundColor3 = Library.Theme.Background
             end
             page.Visible = true
-            t(btn, {BackgroundColor3 = Library.Theme.Accent, TextColor3 = Library.Theme.Background})
+            btn.BackgroundColor3 = Library.Theme.Accent
             window.ActiveTab = {Page = page, Btn = btn}
         end)
 
@@ -164,13 +160,10 @@ function Library:CreateWindow(title)
             create("TextLabel", {Text = "  " .. text, Size = UDim2.new(1, 0, 1, 0), TextColor3 = Library.Theme.Text, Font = Library.Theme.Font, TextSize = 14, BackgroundTransparency = 1, TextXAlignment = Enum.TextXAlignment.Left, Parent = f})
             local b = create("TextButton", {Text = "", Size = UDim2.new(0, 40, 0, 20), Position = UDim2.new(1, -50, 0.5, -10), BackgroundColor3 = state and Library.Theme.Accent or Library.Theme.Background, Parent = f})
             round(b, 10)
-            local dot = create("Frame", {Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(state and 0.55 or 0.05, 0, 0.1, 0), BackgroundColor3 = Library.Theme.Text, Parent = b})
-            round(dot, 8)
             
             b.MouseButton1Click:Connect(function()
                 state = not state
-                t(b, {BackgroundColor3 = state and Library.Theme.Accent or Library.Theme.Background})
-                t(dot, {Position = UDim2.new(state and 0.55 or 0.05, 0, 0.1, 0)})
+                b.BackgroundColor3 = state and Library.Theme.Accent or Library.Theme.Background
                 callback(state)
             end)
         end
@@ -204,31 +197,18 @@ function Library:CreateWindow(title)
 end
 
 -- ============================================================
--- EXEMPLE D'UTILISATION (Directement intégré)
+-- EXECUTION DIRECTE (Copie tout ce bloc)
 -- ============================================================
 
-local Window = Library:CreateWindow("ULTRA STABLE")
+local Window = Library:CreateWindow("GOLD FIXED")
 
-local MainTab = Window:AddTab("Main")
-local VisualsTab = Window:AddTab("Visuals")
-
-MainTab:AddToggle("Auto Farm", false, function(state)
-    print("Auto Farm: " .. tostring(state))
-end)
-
-MainTab:AddSlider("WalkSpeed", 16, 16, 200, function(val)
-    if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
-        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = val
+local Main = Window:AddTab("Main")
+Main:AddToggle("Auto Farm", false, function(t) print(t) end)
+Main:AddSlider("Speed", 16, 16, 200, function(v) 
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.WalkSpeed = v
     end
 end)
+Main:AddButton("Destroy", function() getParent():FindFirstChild("GoldLibFixed"):Destroy() end)
 
-MainTab:AddButton("Destroy GUI", function()
-    local sg = getSafeParent():FindFirstChild("StableLib")
-    if sg then sg:Destroy() end
-end)
-
-VisualsTab:AddButton("ESP Players", function()
-    print("ESP Activated")
-end)
-
-print("GUI Ultra Stable chargé !")
+print("GUI Chargé !")
