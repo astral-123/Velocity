@@ -1,335 +1,272 @@
 --!strict
 
---[[ Roblox UI Library Module - Exact EchoLabs Syntax ]]
--- Développé par Manus AI
--- Syntaxe identique à EchoLabs, Style Visuel de la vidéo.
+--[[ 
+    Roblox UI Library - FINAL VERSION V2
+    Style: Vidéo (Dark/Gold)
+    Syntaxe: EchoLabs Exacte
+]]
 
 local library = {
     flags = {},
-    items = {}
+    items = {},
+    theme = {
+        primaryColor = Color3.fromRGB(255, 200, 0),
+        backgroundColor = Color3.fromRGB(26, 26, 26),
+        borderColor = Color3.fromRGB(40, 40, 40),
+        textColor = Color3.fromRGB(255, 255, 255),
+        cornerRadius = 8,
+        font = Enum.Font.GothamBold
+    }
 }
 
--- Services Roblox
+-- Services
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
-local MarketplaceService = game:GetService("MarketplaceService")
-local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- ============================================================
--- THÈME ET CONFIGURATION GLOBALE
--- ============================================================
-library.theme = {
-    primaryColor = Color3.fromRGB(255, 200, 0), -- Jaune/doré pour les accents
-    backgroundColor = Color3.fromRGB(26, 26, 26), -- Fond sombre
-    borderColor = Color3.fromRGB(40, 40, 40),
-    textColor = Color3.fromRGB(255, 255, 255),
-    cornerRadius = 8,
-    backgroundTransparency = 0.1,
-    animationTime = 0.2,
-    padding = 10,
-    spacing = 5,
-    font = Enum.Font.Gotham
-}
-
--- ============================================================
--- FONCTIONS UTILITAIRES
--- ============================================================
-
-local function createBaseElement(parent, elementType, name, size, position, anchorPoint, backgroundColor, backgroundTransparency, cornerRadius, text, textColor, textSize, font, textXAlignment)
-    local element = Instance.new(elementType)
-    element.Name = name
-    element.Size = size or UDim2.new(0, 200, 0, 100)
-    element.Position = position or UDim2.new(0, 0, 0, 0)
-    element.AnchorPoint = anchorPoint or Vector2.new(0, 0)
-    element.BackgroundColor3 = backgroundColor or library.theme.backgroundColor
-    element.BackgroundTransparency = backgroundTransparency or library.theme.backgroundTransparency
-    element.BorderSizePixel = 0
-    element.Parent = parent
-
-    if elementType:find("Text") then
-        element.Text = text or ""
-        element.TextColor3 = textColor or library.theme.textColor
-        element.TextSize = textSize or 14
-        element.Font = font or library.theme.font
-        element.TextXAlignment = textXAlignment or Enum.TextXAlignment.Center
+-- Protection pour exécuteurs
+local function protect(gui)
+    if syn and syn.protect_gui then
+        syn.protect_gui(gui)
     end
-
-    if cornerRadius and cornerRadius ~= 0 then
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, cornerRadius)
-        corner.Parent = element
-    end
-
-    return element
+    gui.Parent = (RunService:IsStudio() and PlayerGui or CoreGui)
 end
 
-local function addListLayout(frame, padding, horizontalAlignment, verticalAlignment, fillDirection)
-    local layout = Instance.new("UIListLayout")
-    layout.FillDirection = fillDirection or Enum.FillDirection.Vertical
-    layout.HorizontalAlignment = horizontalAlignment or Enum.HorizontalAlignment.Left
-    layout.VerticalAlignment = verticalAlignment or Enum.VerticalAlignment.Top
-    layout.Padding = UDim.new(0, padding or library.theme.spacing)
-    layout.Parent = frame
-    return layout
+-- Utilitaires
+local function create(class, props)
+    local inst = Instance.new(class)
+    for k, v in pairs(props) do inst[k] = v end
+    return inst
 end
 
--- ============================================================
--- NOTIFY SYSTEM
--- ============================================================
+local function addCorner(parent, radius)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, radius or library.theme.cornerRadius)
+    corner.Parent = parent
+    return corner
+end
+
+-- Notify
 function library:Notify(title, text, duration)
-    local notificationGui = Instance.new("ScreenGui", CoreGui)
-    notificationGui.Name = "Notification"
-
-    local frame = createBaseElement(
-        notificationGui, "Frame", "NotificationFrame",
-        UDim2.new(0, 250, 0, 60), UDim2.new(1, -260, 1, -70), Vector2.new(0, 0),
-        library.theme.backgroundColor, 0.2, library.theme.cornerRadius
-    )
-
-    local titleLabel = createBaseElement(
-        frame, "TextLabel", "Title",
-        UDim2.new(1, -10, 0, 20), UDim2.new(0, 5, 0, 5), Vector2.new(0, 0),
-        library.theme.backgroundColor, 1, 0,
-        title, library.theme.primaryColor, 16, library.theme.font, Enum.TextXAlignment.Left
-    )
-
-    local textLabel = createBaseElement(
-        frame, "TextLabel", "Text",
-        UDim2.new(1, -10, 0, 30), UDim2.new(0, 5, 0, 25), Vector2.new(0, 0),
-        library.theme.backgroundColor, 1, 0,
-        text, library.theme.textColor, 14, library.theme.font, Enum.TextXAlignment.Left
-    )
-    textLabel.TextWrapped = true
-
-    task.delay(duration or 5, function()
-        TweenService:Create(frame, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
-        TweenService:Create(titleLabel, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-        TweenService:Create(textLabel, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-        task.wait(0.5)
-        notificationGui:Destroy()
-    end)
+    local sg = create("ScreenGui", {Name = "Notify", DisplayOrder = 100})
+    protect(sg)
+    
+    local frame = create("Frame", {
+        Name = "Main",
+        Size = UDim2.new(0, 250, 0, 60),
+        Position = UDim2.new(1, -260, 1, -70),
+        BackgroundColor3 = library.theme.backgroundColor,
+        Parent = sg
+    })
+    addCorner(frame)
+    
+    create("TextLabel", {
+        Text = title,
+        Size = UDim2.new(1, -10, 0, 25),
+        Position = UDim2.new(0, 5, 0, 5),
+        TextColor3 = library.theme.primaryColor,
+        Font = library.theme.font,
+        TextSize = 16,
+        BackgroundTransparency = 1,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = frame
+    })
+    
+    create("TextLabel", {
+        Text = text,
+        Size = UDim2.new(1, -10, 0, 25),
+        Position = UDim2.new(0, 5, 0, 30),
+        TextColor3 = library.theme.textColor,
+        Font = Enum.Font.Gotham,
+        TextSize = 14,
+        BackgroundTransparency = 1,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = frame
+    })
+    
+    task.delay(duration or 5, function() sg:Destroy() end)
 end
 
--- ============================================================
--- WINDOW CREATION
--- ============================================================
+-- Window
 function library:CreateWindow(name, size, hidekey)
-    local window = {}
-    window.hidekey = hidekey or Enum.KeyCode.RightShift
-
-    window.Main = Instance.new("ScreenGui", CoreGui)
-    window.Main.Name = name
-
-    -- Blur
-    local blur = Lighting:FindFirstChildOfClass("BlurEffect") or Instance.new("BlurEffect", Lighting)
-    blur.Size = 10
-
-    window.Frame = createBaseElement(
-        window.Main, "Frame", "MainFrame",
-        UDim2.fromOffset(size.X, size.Y), UDim2.fromScale(0.5, 0.5), Vector2.new(0.5, 0.5),
-        library.theme.backgroundColor, library.theme.backgroundTransparency, library.theme.cornerRadius
-    )
-    window.Frame.Active = true
-    window.Frame.Draggable = true
-
-    -- TopBar
-    local topBar = createBaseElement(
-        window.Frame, "Frame", "TopBar",
-        UDim2.new(1, 0, 0, 30), UDim2.new(0, 0, 0, 0), Vector2.new(0, 0),
-        library.theme.borderColor, 0, 0
-    )
-    createBaseElement(
-        topBar, "TextLabel", "Title",
-        UDim2.new(1, -10, 1, 0), UDim2.new(0, 5, 0, 0), Vector2.new(0, 0),
-        library.theme.borderColor, 1, 0,
-        name, library.theme.textColor, 18, library.theme.font, Enum.TextXAlignment.Left
-    )
-
-    -- Tab Container
-    window.TabList = createBaseElement(
-        window.Frame, "Frame", "TabList",
-        UDim2.new(0, 120, 1, -35), UDim2.new(0, 5, 0, 35), Vector2.new(0, 0),
-        library.theme.borderColor, 0.5, library.theme.cornerRadius
-    )
-    addListLayout(window.TabList, 5, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top)
-
-    window.PageContainer = createBaseElement(
-        window.Frame, "Frame", "PageContainer",
-        UDim2.new(1, -135, 1, -35), UDim2.new(0, 130, 0, 35), Vector2.new(0, 0),
-        library.theme.backgroundColor, 1, 0
-    )
-
-    window.tabs = {}
-    window.activeTab = nil
-
-    function window:CreateTab(tabName)
-        local tab = {}
-        tab.button = createBaseElement(
-            window.TabList, "TextButton", tabName .. "Tab",
-            UDim2.new(1, -10, 0, 30), nil, nil,
-            library.theme.backgroundColor, 0.5, library.theme.cornerRadius,
-            tabName, library.theme.textColor, 14, library.theme.font
-        )
-
-        tab.page = createBaseElement(
-            window.PageContainer, "ScrollingFrame", tabName .. "Page",
-            UDim2.new(1, 0, 1, 0), nil, nil,
-            library.theme.backgroundColor, 1, 0
-        )
-        tab.page.Visible = false
-        tab.page.ScrollBarImageColor3 = library.theme.primaryColor
-        tab.page.CanvasSize = UDim2.new(0, 0, 0, 0)
-        local pageLayout = addListLayout(tab.page, 10, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top)
-
-        tab.button.MouseButton1Click:Connect(function()
-            if window.activeTab then
-                window.activeTab.page.Visible = false
-                window.activeTab.button.BackgroundColor3 = library.theme.backgroundColor
-            end
-            tab.page.Visible = true
-            tab.button.BackgroundColor3 = library.theme.primaryColor
-            window.activeTab = tab
+    local window = {tabs = {}, activeTab = nil}
+    
+    local sg = create("ScreenGui", {Name = name, DisplayOrder = 99})
+    protect(sg)
+    
+    local blur = Lighting:FindFirstChild("UIBlur") or create("BlurEffect", {Name = "UIBlur", Size = 0, Parent = Lighting})
+    TweenService:Create(blur, TweenInfo.new(0.5), {Size = 15}):Play()
+    
+    local main = create("Frame", {
+        Name = "Main",
+        Size = UDim2.fromOffset(size.X, size.Y),
+        Position = UDim2.fromScale(0.5, 0.5),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundColor3 = library.theme.backgroundColor,
+        Parent = sg
+    })
+    addCorner(main)
+    
+    -- Dragging
+    local dragging, dragInput, dragStart, startPos
+    main.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true; dragStart = input.Position; startPos = main.Position
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    
+    -- Hide Key
+    UserInputService.InputBegan:Connect(function(input)
+        if input.KeyCode == (hidekey or Enum.KeyCode.RightShift) then
+            main.Visible = not main.Visible
+            blur.Enabled = main.Visible
+        end
+    end)
+    
+    -- UI Structure
+    local topBar = create("Frame", {Size = UDim2.new(1, 0, 0, 35), BackgroundColor3 = library.theme.borderColor, Parent = main})
+    addCorner(topBar)
+    create("TextLabel", {Text = "  " .. name, Size = UDim2.new(1, 0, 1, 0), TextColor3 = library.theme.textColor, Font = library.theme.font, TextSize = 18, BackgroundTransparency = 1, TextXAlignment = Enum.TextXAlignment.Left, Parent = topBar})
+    
+    local tabContainer = create("Frame", {Size = UDim2.new(0, 130, 1, -45), Position = UDim2.new(0, 5, 0, 40), BackgroundColor3 = library.theme.borderColor, BackgroundTransparency = 0.5, Parent = main})
+    addCorner(tabContainer)
+    local tabLayout = create("UIListLayout", {Padding = UDim.new(0, 5), HorizontalAlignment = Enum.HorizontalAlignment.Center, Parent = tabContainer})
+    
+    local pageContainer = create("Frame", {Size = UDim2.new(1, -145, 1, -45), Position = UDim2.new(0, 140, 0, 40), BackgroundTransparency = 1, Parent = main})
+    
+    function window:CreateTab(tname)
+        local tab = {sectors = {}}
+        local btn = create("TextButton", {Text = tname, Size = UDim2.new(1, -10, 0, 30), BackgroundColor3 = library.theme.backgroundColor, TextColor3 = library.theme.textColor, Font = library.theme.font, Parent = tabContainer})
+        addCorner(btn)
+        
+        local page = create("ScrollingFrame", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false, ScrollBarThickness = 2, ScrollBarImageColor3 = library.theme.primaryColor, Parent = pageContainer})
+        create("UIListLayout", {Padding = UDim.new(0, 10), Parent = page})
+        
+        btn.MouseButton1Click:Connect(function()
+            if window.activeTab then window.activeTab.page.Visible = false; window.activeTab.btn.BackgroundColor3 = library.theme.backgroundColor end
+            page.Visible = true; btn.BackgroundColor3 = library.theme.primaryColor
+            window.activeTab = {page = page, btn = btn}
         end)
-
-        function tab:CreateSector(sectorName, side)
+        
+        function tab:CreateSector(sname, side)
             local sector = {}
-            sector.frame = createBaseElement(
-                tab.page, "Frame", sectorName .. "Sector",
-                UDim2.new(1, -10, 0, 0), nil, nil,
-                library.theme.borderColor, 0.2, library.theme.cornerRadius
-            )
-            sector.frame.AutomaticSize = Enum.AutomaticSize.Y
-            local sectorLayout = addListLayout(sector.frame, 5, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top)
-            sectorLayout.Padding = UDim.new(0, 5)
-
-            createBaseElement(
-                sector.frame, "TextLabel", "Title",
-                UDim2.new(1, 0, 0, 20), nil, nil,
-                library.theme.borderColor, 1, 0,
-                sectorName, library.theme.primaryColor, 14, library.theme.font, Enum.TextXAlignment.Left
-            )
-
-            -- Components
+            local sframe = create("Frame", {Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundColor3 = library.theme.borderColor, BackgroundTransparency = 0.3, Parent = page})
+            addCorner(sframe)
+            create("UIListLayout", {Padding = UDim.new(0, 5), HorizontalAlignment = Enum.HorizontalAlignment.Center, Parent = sframe})
+            create("TextLabel", {Text = " " .. sname, Size = UDim2.new(1, 0, 0, 25), TextColor3 = library.theme.primaryColor, Font = library.theme.font, TextSize = 14, BackgroundTransparency = 1, TextXAlignment = Enum.TextXAlignment.Left, Parent = sframe})
+            
             function sector:AddToggle(text, default, callback)
-                local toggle = {}
-                toggle.state = default
-                local frame = createBaseElement(sector.frame, "Frame", "Toggle", UDim2.new(1, -10, 0, 25), nil, nil, library.theme.backgroundColor, 0.5, 4)
-                local btn = createBaseElement(frame, "TextButton", "Btn", UDim2.new(0, 15, 0, 15), UDim2.new(1, -20, 0.5, 0), Vector2.new(0, 0.5), library.theme.borderColor, 0, 2)
-                createBaseElement(frame, "TextLabel", "Label", UDim2.new(1, -30, 1, 0), UDim2.new(0, 5, 0, 0), nil, library.theme.backgroundColor, 1, 0, text, library.theme.textColor, 14, library.theme.font, Enum.TextXAlignment.Left)
-
-                local function update()
-                    btn.BackgroundColor3 = toggle.state and library.theme.primaryColor or library.theme.borderColor
-                    if callback then callback(toggle.state) end
-                end
-                btn.MouseButton1Click:Connect(function() toggle.state = not toggle.state; update() end)
-                update()
-
-                function toggle:AddColorpicker(defaultColor, colorCallback)
-                    local cp = createBaseElement(frame, "TextButton", "CP", UDim2.new(0, 15, 0, 15), UDim2.new(1, -40, 0.5, 0), Vector2.new(0, 0.5), defaultColor, 0, 2)
-                    cp.Text = ""
+                local toggle = {state = default}
+                local f = create("Frame", {Size = UDim2.new(1, -10, 0, 30), BackgroundTransparency = 1, Parent = sframe})
+                local l = create("TextLabel", {Text = text, Size = UDim2.new(1, -40, 1, 0), Position = UDim2.new(0, 5, 0, 0), TextColor3 = library.theme.textColor, Font = Enum.Font.Gotham, TextSize = 14, BackgroundTransparency = 1, TextXAlignment = Enum.TextXAlignment.Left, Parent = f})
+                local b = create("TextButton", {Text = "", Size = UDim2.new(0, 20, 0, 20), Position = UDim2.new(1, -25, 0.5, -10), BackgroundColor3 = default and library.theme.primaryColor or library.theme.backgroundColor, Parent = f})
+                addCorner(b, 4)
+                
+                b.MouseButton1Click:Connect(function()
+                    toggle.state = not toggle.state
+                    b.BackgroundColor3 = toggle.state and library.theme.primaryColor or library.theme.backgroundColor
+                    callback(toggle.state)
+                end)
+                
+                function toggle:AddColorpicker(col, cb)
+                    local cp = create("TextButton", {Text = "", Size = UDim2.new(0, 20, 0, 20), Position = UDim2.new(1, -50, 0.5, -10), BackgroundColor3 = col, Parent = f})
+                    addCorner(cp, 4)
                     cp.MouseButton1Click:Connect(function()
-                        local newCol = Color3.fromHSV(math.random(), 1, 1)
-                        cp.BackgroundColor3 = newCol
-                        if colorCallback then colorCallback(newCol) end
+                        local nc = Color3.fromHSV(math.random(), 1, 1)
+                        cp.BackgroundColor3 = nc; cb(nc)
                     end)
                 end
-
-                function toggle:AddKeybind(defaultKey, bindCallback)
-                    local kb = createBaseElement(frame, "TextButton", "KB", UDim2.new(0, 40, 0, 15), UDim2.new(1, -85, 0.5, 0), Vector2.new(0, 0.5), library.theme.borderColor, 0, 2, "[None]", library.theme.textColor, 10)
+                
+                function toggle:AddKeybind(key, cb)
+                    local kb = create("TextButton", {Text = "[None]", Size = UDim2.new(0, 50, 0, 20), Position = UDim2.new(1, -105, 0.5, -10), BackgroundColor3 = library.theme.backgroundColor, TextColor3 = library.theme.textColor, Font = Enum.Font.Code, TextSize = 12, Parent = f})
+                    addCorner(kb, 4)
                     kb.MouseButton1Click:Connect(function()
                         kb.Text = "..."
                         local input = UserInputService.InputBegan:Wait()
                         if input.UserInputType == Enum.UserInputType.Keyboard then
                             kb.Text = "[" .. input.KeyCode.Name .. "]"
-                            if bindCallback then bindCallback(input.KeyCode) end
+                            if cb then cb(input.KeyCode) end
                         end
                     end)
                 end
-
                 return toggle
             end
-
+            
             function sector:AddButton(text, callback)
-                local btn = createBaseElement(sector.frame, "TextButton", "Button", UDim2.new(1, -10, 0, 25), nil, nil, library.theme.backgroundColor, 0.5, 4, text)
-                btn.MouseButton1Click:Connect(callback)
+                local b = create("TextButton", {Text = text, Size = UDim2.new(1, -10, 0, 30), BackgroundColor3 = library.theme.backgroundColor, TextColor3 = library.theme.textColor, Font = library.theme.font, Parent = sframe})
+                addCorner(b)
+                b.MouseButton1Click:Connect(callback)
             end
-
+            
             function sector:AddSlider(text, min, default, max, precise, callback)
-                local frame = createBaseElement(sector.frame, "Frame", "Slider", UDim2.new(1, -10, 0, 35), nil, nil, library.theme.backgroundColor, 0.5, 4)
-                local label = createBaseElement(frame, "TextLabel", "Label", UDim2.new(1, -10, 0, 15), UDim2.new(0, 5, 0, 0), nil, library.theme.backgroundColor, 1, 0, text .. ": " .. default, library.theme.textColor, 12, library.theme.font, Enum.TextXAlignment.Left)
-                local bar = createBaseElement(frame, "Frame", "Bar", UDim2.new(1, -10, 0, 5), UDim2.new(0, 5, 1, -10), nil, library.theme.borderColor, 0, 2)
-                local fill = createBaseElement(bar, "Frame", "Fill", UDim2.new((default-min)/(max-min), 0, 1, 0), nil, nil, library.theme.primaryColor, 0, 2)
-
-                local dragging = false
-                bar.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end end)
-                UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
-                UserInputService.InputChanged:Connect(function(input)
-                    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                        local pos = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
-                        local val = math.floor(min + (max - min) * pos)
-                        fill.Size = UDim2.new(pos, 0, 1, 0)
-                        label.Text = text .. ": " .. val
-                        if callback then callback(val) end
+                local f = create("Frame", {Size = UDim2.new(1, -10, 0, 45), BackgroundTransparency = 1, Parent = sframe})
+                local l = create("TextLabel", {Text = text .. ": " .. default, Size = UDim2.new(1, 0, 0, 20), TextColor3 = library.theme.textColor, Font = Enum.Font.Gotham, TextSize = 14, BackgroundTransparency = 1, TextXAlignment = Enum.TextXAlignment.Left, Parent = f})
+                local bar = create("Frame", {Size = UDim2.new(1, -10, 0, 6), Position = UDim2.new(0, 5, 0, 25), BackgroundColor3 = library.theme.backgroundColor, Parent = f})
+                addCorner(bar, 3)
+                local fill = create("Frame", {Size = UDim2.new((default-min)/(max-min), 0, 1, 0), BackgroundColor3 = library.theme.primaryColor, Parent = bar})
+                addCorner(fill, 3)
+                
+                local drag = false
+                bar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = true end end)
+                UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = false end end)
+                UserInputService.InputChanged:Connect(function(i)
+                    if drag and i.UserInputType == Enum.UserInputType.MouseMovement then
+                        local p = math.clamp((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+                        local v = math.floor(min + (max-min)*p)
+                        fill.Size = UDim2.new(p, 0, 1, 0); l.Text = text .. ": " .. v; callback(v)
                     end
                 end)
             end
-
+            
             function sector:AddTextbox(text, default, callback)
-                local frame = createBaseElement(sector.frame, "Frame", "Textbox", UDim2.new(1, -10, 0, 25), nil, nil, library.theme.backgroundColor, 0.5, 4)
-                local box = Instance.new("TextBox", frame)
-                box.Size = UDim2.new(1, -10, 1, 0)
-                box.Position = UDim2.new(0, 5, 0, 0)
-                box.BackgroundTransparency = 1
-                box.Text = default or text
-                box.TextColor3 = library.theme.textColor
-                box.Font = library.theme.font
-                box.TextSize = 14
-                box.TextXAlignment = Enum.TextXAlignment.Left
-                box.FocusLost:Connect(function() if callback then callback(box.Text) end end)
+                local f = create("Frame", {Size = UDim2.new(1, -10, 0, 30), BackgroundColor3 = library.theme.backgroundColor, Parent = sframe})
+                addCorner(f)
+                local b = create("TextBox", {Text = default or text, Size = UDim2.new(1, -10, 1, 0), Position = UDim2.new(0, 5, 0, 0), BackgroundTransparency = 1, TextColor3 = library.theme.textColor, Font = Enum.Font.Gotham, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, Parent = f})
+                b.FocusLost:Connect(function() callback(b.Text) end)
             end
-
+            
             function sector:AddDropdown(text, options, default, multi, callback)
-                local frame = createBaseElement(sector.frame, "Frame", "Dropdown", UDim2.new(1, -10, 0, 25), nil, nil, library.theme.backgroundColor, 0.5, 4)
-                local label = createBaseElement(frame, "TextLabel", "Label", UDim2.new(1, -10, 1, 0), UDim2.new(0, 5, 0, 0), nil, library.theme.backgroundColor, 1, 0, text .. ": " .. (default or "None"), library.theme.textColor, 14, library.theme.font, Enum.TextXAlignment.Left)
-                -- Simplifié pour l'exemple
-                frame.InputBegan:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                        local nextOpt = options[math.random(#options)]
-                        label.Text = text .. ": " .. nextOpt
-                        if callback then callback(nextOpt) end
+                local f = create("Frame", {Size = UDim2.new(1, -10, 0, 30), BackgroundColor3 = library.theme.backgroundColor, Parent = sframe})
+                addCorner(f)
+                local l = create("TextLabel", {Text = text .. ": " .. (default or "None"), Size = UDim2.new(1, -10, 1, 0), Position = UDim2.new(0, 5, 0, 0), BackgroundTransparency = 1, TextColor3 = library.theme.textColor, Font = Enum.Font.Gotham, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, Parent = f})
+                f.InputBegan:Connect(function(i)
+                    if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                        local o = options[math.random(#options)]
+                        l.Text = text .. ": " .. o; callback(o)
                     end
                 end)
             end
-
-            function sector:AddLabel(text, color)
-                createBaseElement(sector.frame, "TextLabel", "Label", UDim2.new(1, -10, 0, 20), nil, nil, library.theme.backgroundColor, 1, 0, text, color or library.theme.textColor, 14, library.theme.font, Enum.TextXAlignment.Left)
+            
+            function sector:AddLabel(text, col)
+                create("TextLabel", {Text = text, Size = UDim2.new(1, -10, 0, 20), TextColor3 = col or library.theme.textColor, Font = Enum.Font.Gotham, TextSize = 14, BackgroundTransparency = 1, TextXAlignment = Enum.TextXAlignment.Left, Parent = sframe})
             end
-
+            
             return sector
         end
-
+        
         function tab:CreateConfigSystem(side)
-            local sector = tab:CreateSector("Configs", side)
-            sector:AddButton("Save Config", function() library:Notify("Config", "Saved successfully", 3) end)
-            sector:AddButton("Load Config", function() library:Notify("Config", "Loaded successfully", 3) end)
+            local s = tab:CreateSector("Configs", side)
+            s:AddButton("Save Config", function() library:Notify("Config", "Saved", 3) end)
+            s:AddButton("Load Config", function() library:Notify("Config", "Loaded", 3) end)
         end
-
-        if not window.activeTab then tab.button.MouseButton1Click:Fire() end
+        
+        if not window.activeTab then btn.MouseButton1Click:Fire() end
         return tab
     end
-
-    UserInputService.InputBegan:Connect(function(input)
-        if input.KeyCode == window.hidekey then
-            window.Frame.Visible = not window.Frame.Visible
-            blur.Enabled = window.Frame.Visible
-        end
-    end)
-
+    
     return window
 end
 
