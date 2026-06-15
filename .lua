@@ -1,11 +1,3 @@
---!strict
-
---[[ 
-    ROBLOX UI LIBRARY - GOLD EDITION
-    Style: Ultra-Modern Dark & Gold (Video Style)
-    Optimized for stability and beauty.
-]]
-
 local Library = {
     Theme = {
         Accent = Color3.fromRGB(255, 200, 0),
@@ -17,25 +9,22 @@ local Library = {
     }
 }
 
+-- Services
 local UIS = game:GetService("UserInputService")
 local Tween = game:GetService("TweenService")
 local Run = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 
 local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local PlayerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
 
--- Helper for stability
-local function getRoot()
-    if Run:IsStudio() then return PlayerGui end
-    local success, res = pcall(function() return CoreGui end)
-    return success and res or PlayerGui
-end
-
-local function protect(gui)
-    if syn and syn.protect_gui then pcall(syn.protect_gui, gui) end
-    gui.Parent = getRoot()
+-- Helper pour la stabilité (Évite le CoreGui si instable)
+local function getSafeParent()
+    local success, coregui = pcall(function() return game:GetService("CoreGui") end)
+    if success and coregui then
+        return coregui
+    end
+    return PlayerGui
 end
 
 -- UI Helpers
@@ -48,7 +37,6 @@ end
 local function round(parent, radius)
     local c = create("UICorner", {CornerRadius = UDim.new(0, radius or Library.Theme.Rounding)})
     c.Parent = parent
-    return c
 end
 
 local function t(obj, props)
@@ -59,8 +47,8 @@ end
 function Library:CreateWindow(title)
     local window = {Tabs = {}, ActiveTab = nil}
     
-    local sg = create("ScreenGui", {Name = "GoldLib", DisplayOrder = 999, ResetOnSpawn = false})
-    protect(sg)
+    local sg = create("ScreenGui", {Name = "StableLib", DisplayOrder = 999, ResetOnSpawn = false})
+    sg.Parent = getSafeParent()
     
     local main = create("Frame", {
         Name = "Main",
@@ -167,8 +155,6 @@ function Library:CreateWindow(title)
             })
             round(b, 6)
             b.MouseButton1Click:Connect(callback)
-            b.MouseEnter:Connect(function() t(b, {BackgroundColor3 = Library.Theme.Accent, TextColor3 = Library.Theme.Background}) end)
-            b.MouseLeave:Connect(function() t(b, {BackgroundColor3 = Library.Theme.Secondary, TextColor3 = Library.Theme.Text}) end)
         end
 
         function tab:AddToggle(text, default, callback)
@@ -210,30 +196,6 @@ function Library:CreateWindow(title)
             end)
         end
 
-        function tab:AddDropdown(text, list, callback)
-            local f = create("Frame", {Size = UDim2.new(1, 0, 0, 40), BackgroundColor3 = Library.Theme.Secondary, Parent = page})
-            round(f, 6)
-            local l = create("TextLabel", {Text = "  " .. text .. ": " .. (list[1] or ""), Size = UDim2.new(1, 0, 1, 0), TextColor3 = Library.Theme.Text, Font = Library.Theme.Font, TextSize = 14, BackgroundTransparency = 1, TextXAlignment = Enum.TextXAlignment.Left, Parent = f})
-            local btn = create("TextButton", {Text = "V", Size = UDim2.new(0, 30, 0, 30), Position = UDim2.new(1, -35, 0.5, -15), BackgroundTransparency = 1, TextColor3 = Library.Theme.Accent, Font = Library.Theme.Font, Parent = f})
-            
-            btn.MouseButton1Click:Connect(function()
-                local opt = list[math.random(#list)]
-                l.Text = "  " .. text .. ": " .. opt; callback(opt)
-            end)
-        end
-
-        function tab:AddColorPicker(text, default, callback)
-            local f = create("Frame", {Size = UDim2.new(1, 0, 0, 40), BackgroundColor3 = Library.Theme.Secondary, Parent = page})
-            round(f, 6)
-            create("TextLabel", {Text = "  " .. text, Size = UDim2.new(1, 0, 1, 0), TextColor3 = Library.Theme.Text, Font = Library.Theme.Font, TextSize = 14, BackgroundTransparency = 1, TextXAlignment = Enum.TextXAlignment.Left, Parent = f})
-            local cp = create("TextButton", {Text = "", Size = UDim2.new(0, 30, 0, 20), Position = UDim2.new(1, -40, 0.5, -10), BackgroundColor3 = default, Parent = f})
-            round(cp, 4)
-            cp.MouseButton1Click:Connect(function()
-                local nc = Color3.fromHSV(math.random(), 1, 1)
-                t(cp, {BackgroundColor3 = nc}); callback(nc)
-            end)
-        end
-
         if not window.ActiveTab then btn.MouseButton1Click:Fire() end
         return tab
     end
@@ -241,4 +203,32 @@ function Library:CreateWindow(title)
     return window
 end
 
-return Library
+-- ============================================================
+-- EXEMPLE D'UTILISATION (Directement intégré)
+-- ============================================================
+
+local Window = Library:CreateWindow("ULTRA STABLE")
+
+local MainTab = Window:AddTab("Main")
+local VisualsTab = Window:AddTab("Visuals")
+
+MainTab:AddToggle("Auto Farm", false, function(state)
+    print("Auto Farm: " .. tostring(state))
+end)
+
+MainTab:AddSlider("WalkSpeed", 16, 16, 200, function(val)
+    if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = val
+    end
+end)
+
+MainTab:AddButton("Destroy GUI", function()
+    local sg = getSafeParent():FindFirstChild("StableLib")
+    if sg then sg:Destroy() end
+end)
+
+VisualsTab:AddButton("ESP Players", function()
+    print("ESP Activated")
+end)
+
+print("GUI Ultra Stable chargé !")
