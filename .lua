@@ -283,33 +283,3 @@ function Library:CreateWindow(title)
 
     return window
 end
-
--- ============================================================
--- EXEMPLE COMPLET - STYLE VIDÉO
--- ============================================================
-
-local Window = Library:CreateWindow("PREMIUM GOLD")
-
-local Main = Window:AddTab("Main")
-local Visuals = Window:AddTab("Visuals")
-local Settings = Window:AddTab("Settings")
-
-Main:AddParagraph("Welcome", "This is the premium Gold Edition UI library, designed to look exactly like the video. Enjoy the smooth animations and high-quality design.")
-
-Main:AddToggle("Auto Farm", false, function(s) print("Farm: " .. tostring(s)) end)
-Main:AddSlider("WalkSpeed", 16, 16, 250, function(v) 
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        LocalPlayer.Character.Humanoid.WalkSpeed = v
-    end
-end)
-
-Visuals:AddColorPicker("ESP Color", Color3.fromRGB(255, 215, 0), function(c) print("Color: " .. tostring(c)) end)
-Visuals:AddDropdown("ESP Mode", {"Box", "Skeleton", "Tracer", "Highlight"}, function(o) print("Mode: " .. o) end)
-Visuals:AddButton("Refresh ESP", function() print("ESP Refreshed") end)
-
-Settings:AddButton("Destroy UI", function() 
-    getParent():FindFirstChild("VideoLib"):Destroy() 
-    if Lighting:FindFirstChild("UIBlur") then Lighting.UIBlur:Destroy() end
-end)
-
-print("GUI Premium Gold Chargé !")
